@@ -1,5 +1,13 @@
-const express = require('express')
-const app = express()
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const Joi = require('joi');
+const uuid = require('uuid');
+
+const app = express();
+
+app.use(bodyParser.json());
+app.use(cors());
 
 let persons = [{
     id: '1',
@@ -18,7 +26,7 @@ const validateMiddleware = (req, res, next) => {
         name: Joi.string().required(),
         age: Joi.number().required(),
         hobbies: Joi.array().required()
-    })
+    });
 
     const {error} = personPOSTSchema.validate(req.body);
     const valid = (error==null);
@@ -28,7 +36,7 @@ const validateMiddleware = (req, res, next) => {
     }else{
         const {details} = error;
         const message = details.map(i => i.message).join(',');
-        res.status(422).json({error:message});
+        res.status(400).json({error:message});
     }
 }
 
@@ -39,14 +47,18 @@ app.get('/person', (req, res) => {
 app.get('/person/:id', (req, res) => {
     const {id} = req.params;
     const filteredPersons = persons.filter((item) => item.id === id);
-    res.status(200).send(filteredPersons);
+    if(filteredPersons.length===0){
+        res.status(404).send(null);
+    }else{
+        res.status(200).send(filteredPersons[0]);
+    }
 });
 
 app.post('/person', validateMiddleware, (req, res) => {
     let person = req.body;
     person = {id:uuid.v4(), ...person};
     persons.push(person);
-    res.status(201).json({
+    res.status(200).json({
         person: person,
         data: persons
     });
